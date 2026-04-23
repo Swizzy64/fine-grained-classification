@@ -18,4 +18,4 @@ class CarsDataset(Dataset):
         if self.transform:
             image = self.transform(image)
 
-        return image, int(label) - 1  # Convert to 0-based index
+        return image, int(label)
