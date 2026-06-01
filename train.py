@@ -7,7 +7,21 @@ from src.dataset.annotations import load_annotations
 from src.dataset.splits import create_standard_split
 from src.dataset.cars_dataset import CarsDataset
 from src.models.resnet import get_resnet50
+from src.models.efficientnet import get_efficientnet_b3
+from src.models.vit import get_vit_b16
 from src.training.trainer import train_one_epoch, evaluate
+
+def get_model(name, num_classes, device):
+    if name == "resnet":
+        model = get_resnet50(num_classes=num_classes)
+    elif name == "efficientnet":
+        model = get_efficientnet_b3(num_classes=num_classes)
+    elif name == "vit":
+        model = get_vit_b16(num_classes=num_classes)
+    else:
+        raise ValueError(f"Unknown model: {name}")
+
+    return model.to(device)
 
 def main():
     samples = load_annotations(
@@ -18,9 +32,13 @@ def main():
     train, val, test = create_standard_split(samples)
 
     transform = transforms.Compose([
-        transforms.Resize((224, 224)),
-        transforms.ToTensor()
-    ])
+    transforms.Resize((224, 224)),
+    transforms.ToTensor(),
+    transforms.Normalize(
+        mean=[0.485, 0.456, 0.406],
+        std=[0.229, 0.224, 0.225]
+    )
+])
 
     train_ds = CarsDataset(train, transform)
 
@@ -32,7 +50,8 @@ def main():
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    model = get_resnet50(num_classes=196).to(device)
+    model_name = "vit"  # "resnet" / "efficientnet" / "vit"
+    model = get_model(model_name, num_classes=196, device=device)   
 
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
 
